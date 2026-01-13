@@ -1,14 +1,15 @@
 import React, { useMemo } from 'react';
 import { Streamer } from '@/types/streamer';
 import { predictNextStreamStart } from '@/utils/prediction';
-import { Trash2, ExternalLink, Twitch, AlertCircle } from 'lucide-react';
+import { Trash2, ExternalLink, Twitch, AlertCircle, Star } from 'lucide-react';
 
 interface Props {
     streamer: Streamer;
     onRemove: (id: string) => void;
+    onToggleFavorite: (id: string) => void;
 }
 
-export const StreamerCard: React.FC<Props> = ({ streamer, onRemove }) => {
+export const StreamerCard: React.FC<Props> = ({ streamer, onRemove, onToggleFavorite }) => {
     const prediction = useMemo(() => predictNextStreamStart(streamer.history), [streamer.history]);
 
     const isLive = streamer.status === 'live';
@@ -85,13 +86,13 @@ export const StreamerCard: React.FC<Props> = ({ streamer, onRemove }) => {
                         <div>
                             {streamer.displayName && streamer.displayName !== streamer.name ? (
                                 <>
-                                    <h3 className="text-xl font-bold text-white tracking-wide leading-tight">
+                                    <h3 className="text-base md:text-xl font-bold text-white tracking-wide leading-tight">
                                         {streamer.displayName}
                                     </h3>
                                     <p className="text-xs text-gray-400 font-medium -mt-0.5">@{streamer.name}</p>
                                 </>
                             ) : (
-                                <h3 className="text-xl font-bold text-white tracking-wide">{streamer.name}</h3>
+                                <h3 className="text-base md:text-xl font-bold text-white tracking-wide">{streamer.name}</h3>
                             )}
                             <div className="flex items-center gap-2 text-xs text-gray-400 uppercase tracking-wider font-semibold">
                                 {streamer.platform === 'twitch' ? (
@@ -106,12 +107,22 @@ export const StreamerCard: React.FC<Props> = ({ streamer, onRemove }) => {
                         </div>
                     </div>
 
-                    <button
-                        onClick={() => onRemove(streamer.id)}
-                        className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-full hover:bg-white/5"
-                    >
-                        <Trash2 size={18} />
-                    </button>
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => onToggleFavorite(streamer.id)}
+                            className={`p-2 rounded-full transition-colors ${streamer.isFavorite ? 'text-yellow-400 hover:bg-yellow-400/10' : 'text-gray-600 hover:text-yellow-400 hover:bg-white/5'}`}
+                            title={streamer.isFavorite ? "お気に入り解除" : "お気に入りに追加"}
+                        >
+                            <Star size={18} fill={streamer.isFavorite ? "currentColor" : "none"} />
+                        </button>
+                        <button
+                            onClick={() => onRemove(streamer.id)}
+                            className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-full hover:bg-white/5"
+                            title="削除"
+                        >
+                            <Trash2 size={18} />
+                        </button>
+                    </div>
                 </div>
 
                 {isLive ? (

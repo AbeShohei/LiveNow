@@ -22,4 +22,5 @@ export interface Streamer {
     viewerCount?: number;
     lastStreamEndTime?: string; // ISO String - when last stream ended (from API)
     error?: boolean; // If API fetch failed
+    isFavorite?: boolean;
 }

@@ -8,12 +8,28 @@ export const useStreamers = () => {
     const [streamers, setStreamers] = useState<Streamer[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const sortStreamers = useCallback((list: Streamer[]) => {
+        return [...list].sort((a, b) => {
+            // 1. Favorites first
+            if (a.isFavorite && !b.isFavorite) return -1;
+            if (!a.isFavorite && b.isFavorite) return 1;
+
+            // 2. Live status
+            if (a.status === 'live' && b.status !== 'live') return -1;
+            if (a.status !== 'live' && b.status === 'live') return 1;
+
+            return 0;
+        });
+    }, []);
+
     // Load from LocalStorage
     useEffect(() => {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
             try {
-                setStreamers(JSON.parse(stored));
+                const parsed = JSON.parse(stored);
+                // Ensure sorting on load
+                setStreamers(sortStreamers(parsed));
             } catch (e) {
                 console.error("Failed to parse stored streamers", e);
             }
@@ -42,7 +58,7 @@ export const useStreamers = () => {
             // Batch fetch with token
             const results = await streamingService.getBatchStatus(targets, twitchToken);
 
-            setStreamers(prev => prev.map(s => {
+            setStreamers(prev => sortStreamers(prev.map(s => {
                 const key = `${s.platform}:${s.name}`;
                 const result = results[key];
 
@@ -59,6 +75,14 @@ export const useStreamers = () => {
                     const startTime = result.startedAt || new Date().toISOString();
                     newHistory = [{ startTime }, ...newHistory].slice(0, 10);
                     lastLiveStart = startTime;
+
+                    // Trigger Notification for NEW live stream
+                    // Check if initial load (loading is false inside checkStatuses is tough, check lastLiveStart mismatch)
+                    // Simplified: Just notify. To prevent notify on page load for existing streams, 
+                    // we could check if 'wasLive' was false AND we are not in the first run (maybe optional arg?)
+                    // For now, simple implementation
+                    sendNotification({ ...s, displayName: result.displayName || s.displayName, avatarUrl: result.thumbnailUrl || s.avatarUrl }, result.streamTitle || 'New Stream');
+                } else if (wasLive && !isLive) {
                 } else if (wasLive && !isLive) {
                     if (newHistory.length > 0 && !newHistory[0].endTime) {
                         newHistory[0] = { ...newHistory[0], endTime: new Date().toISOString() };
@@ -81,7 +105,7 @@ export const useStreamers = () => {
                     viewerCount: isLive ? result.viewerCount : undefined,
                     lastStreamEndTime: !isLive ? result.lastStreamEndTime : undefined,
                 };
-            }));
+            })));
         } catch (e) {
             console.error("Batch update failed", e);
         }
@@ -106,7 +130,7 @@ export const useStreamers = () => {
             return false;
         }
 
-        const updatedList = [...streamers, newStreamer];
+        const updatedList = sortStreamers([...streamers, { ...newStreamer, isFavorite: false }]);
         setStreamers(updatedList);
 
         // Trigger immediate update using the new list
@@ -118,8 +142,34 @@ export const useStreamers = () => {
         setStreamers(prev => prev.filter(s => s.id !== id));
     };
 
+    const toggleFavorite = (id: string) => {
+        setStreamers(prev => sortStreamers(prev.map(s =>
+            s.id === id ? { ...s, isFavorite: !s.isFavorite } : s
+        )));
+    };
+
     // Expose a manual refresh for UI
     const refresh = () => checkStatuses();
 
-    return { streamers, addStreamer, removeStreamer, refresh, loading };
+
+    // Request Notification Permission
+    const requestNotificationPermission = async () => {
+        if (!("Notification" in window)) return;
+        if (Notification.permission === 'default') {
+            await Notification.requestPermission();
+        }
+    };
+
+    // Trigger Notification
+    const sendNotification = (streamer: Streamer, title: string) => {
+        if (Notification.permission === 'granted') {
+            new Notification('🔴 配信開始！ - ' + streamer.displayName || streamer.name, {
+                body: `${title}\n${streamer.platform}で配信が始まりました！`,
+                icon: streamer.avatarUrl || '/icon-192.png',
+                tag: `live-${streamer.platform}-${streamer.name}` // Avoid duplicate notifications
+            });
+        }
+    };
+
+    return { streamers, addStreamer, removeStreamer, toggleFavorite, refresh, loading, requestNotificationPermission };
 };

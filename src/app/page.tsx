@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStreamers } from '@/hooks/useStreamers';
 import { StreamerCard } from '@/components/StreamerCard';
 import { AddStreamerModal } from '@/components/AddStreamerModal';
@@ -8,8 +8,13 @@ import { Activity, Plus, RefreshCw, Radio } from 'lucide-react';
 import { TwitchConnect } from '@/components/TwitchConnect';
 
 export default function Home() {
-  const { streamers, addStreamer, removeStreamer, refresh, loading } = useStreamers();
+  const { streamers, addStreamer, removeStreamer, toggleFavorite, refresh, loading, requestNotificationPermission } = useStreamers();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Request notification permission on mount
+  useEffect(() => {
+    requestNotificationPermission();
+  }, [requestNotificationPermission]);
 
   const liveStreamers = streamers.filter(s => s.status === 'live');
   const offlineStreamers = streamers.filter(s => s.status !== 'live');
@@ -24,33 +29,31 @@ export default function Home() {
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-10">
         {/* Header */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-white/5 rounded-lg border border-white/10 backdrop-blur-md">
-                <Activity className="text-purple-400" size={24} />
-              </div>
-              <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-                StreamPulse
-              </h1>
+        <header className="flex items-center justify-between gap-4 mb-8">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/5 rounded-lg border border-white/10 backdrop-blur-md hidden sm:block">
+              <Activity className="text-purple-400" size={24} />
             </div>
-            <p className="text-gray-400 text-lg">リアルタイム配信監視 & AI予測ダッシュボード</p>
+            <h1 className="text-2xl md:text-4xl font-black tracking-tighter bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent animate-gradient-x">
+              配信なう！
+            </h1>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => refresh()}
-              className="p-3 rounded-xl bg-gray-800/50 hover:bg-gray-800 text-gray-400 hover:text-white transition-all border border-gray-700/50"
+              className="hidden md:flex p-3 rounded-xl bg-gray-800/50 hover:bg-gray-800 text-gray-400 hover:text-white transition-all border border-gray-700/50"
               title="ステータス更新"
             >
               <RefreshCw size={20} />
             </button>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="group flex items-center gap-2 px-5 py-3 rounded-xl bg-white text-black font-bold hover:bg-gray-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+              className="group flex items-center gap-2 px-4 py-2 md:px-5 md:py-3 rounded-xl bg-white text-black font-bold hover:bg-gray-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] text-sm md:text-base"
             >
-              <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
-              追加する
+              <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+              <span className="hidden sm:inline">追加する</span>
+              <span className="sm:hidden">追加</span>
             </button>
           </div>
         </header>
@@ -86,7 +89,7 @@ export default function Home() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {liveStreamers.map(s => (
-                    <StreamerCard key={s.id} streamer={s} onRemove={removeStreamer} />
+                    <StreamerCard key={s.id} streamer={s} onRemove={removeStreamer} onToggleFavorite={toggleFavorite} />
                   ))}
                 </div>
               </section>
@@ -101,7 +104,7 @@ export default function Home() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-90">
                   {offlineStreamers.map(s => (
-                    <StreamerCard key={s.id} streamer={s} onRemove={removeStreamer} />
+                    <StreamerCard key={s.id} streamer={s} onRemove={removeStreamer} onToggleFavorite={toggleFavorite} />
                   ))}
                 </div>
               </section>
@@ -114,6 +117,14 @@ export default function Home() {
           onClose={() => setIsModalOpen(false)}
           onAdd={addStreamer}
         />
+
+        {/* Floating Refresh Button (Mobile) */}
+        <button
+          onClick={() => refresh()}
+          className="fixed bottom-6 right-6 z-50 md:hidden p-4 rounded-full bg-purple-600 text-white shadow-lg shadow-purple-900/50 hover:bg-purple-500 active:scale-90 transition-all"
+        >
+          <RefreshCw size={24} className={loading ? 'animate-spin' : ''} />
+        </button>
       </div>
     </main>
   );

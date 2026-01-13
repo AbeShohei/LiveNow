@@ -46,6 +46,7 @@ export async function fetchTwitCastingCombined(userIds: string[]) {
                 if (user) {
                     results[id] = {
                         is_live: user.is_live,
+                        name: user.name, // Display Name (Nickname)
                         profile_image: user.image,
                         // If live, we need movie info for details? 
                         // user object has 'last_movie_id'. We can fetch movie if needed, 
