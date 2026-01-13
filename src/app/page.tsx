@@ -66,8 +66,8 @@ export default function Home() {
         ) : streamers.length === 0 ? (
           <div className="text-center py-32 border border-dashed border-gray-800 rounded-3xl bg-white/5 backdrop-blur-sm">
             <Radio className="mx-auto h-16 w-16 text-gray-700 mb-4" />
-            <h3 className="text-2xl font-bold text-gray-300 mb-2">追跡中のストリーマーがいません</h3>
-            <p className="text-gray-500 mb-8 max-w-md mx-auto">TwitchやKickのお気に入りの配信者を追加して、配信状況の追跡と次の配信予測を開始しましょう。</p>
+            <h3 className="text-lg md:text-2xl font-bold text-gray-300 mb-2">追跡中のストリーマーがいません</h3>
+            <p className="text-sm md:text-base text-gray-500 mb-8 max-w-md mx-auto px-4">TwitchやKickのお気に入りの配信者を追加して、配信状況の追跡と次の配信予測を開始しましょう。</p>
             <button
               onClick={() => setIsModalOpen(true)}
               className="px-6 py-3 rounded-lg bg-purple-600 text-white font-bold hover:bg-purple-500 transition-colors"
